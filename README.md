@@ -10,21 +10,24 @@ cd src/
 
 make
 
+
+
+--------------------------------
 Slow WLS ToyMC Reference Manual:
 Author: David Gallacher
 
-
+---------------------------------
 To Run:
 1.	First run “make” in src/ directory
-2.	Then go into scripts/ and run “root make_spectra.C” to ensure PDF histogram files are present in dat/ (make_spectra.C requires RAT install)
+2.	Then go into scripts/ and run “root make_spectra.C” to ensure PDF histogram files are present in dat/ (make_spectra.C requires rat-deap installation)
 3.	To run use: .src/toyMC “seednumber” “number of trials” “number of experiments” “fileoutname” (Optional)
-      a.	Where you can set the seed for this toy
-      b.	For each “toy” you run there are N experiments of N trials each, specified by the command line inputs
-      c.	Can pass a filename output, defaults to “output.root” and will overwrite in the output/ folder
+      * Where you can set the seed for this toy
+      * For each “toy” you run there are N experiments of N trials each, specified by the command line inputs
+      * Can pass a filename output, defaults to “output.root” and will overwrite in the output/ folder
 4.	Run scripts/analyze.C to analyze the output of the toy MC
-      a.	Eg for use: “root -l analyze.C’(“output.root”)’ 
-      b.	Analyze will look for output file name passed in command line (default is output.root) inside output/ 
-c.	Plots from analyze.C are stored in plots/
+      * Eg for use: “root -l analyze.C’(“output.root”)’ 
+      * Analyze will look for output file name passed in command line (default is output.root) inside output/ 
+      * Plots from analyze.C are stored in plots/
 
 
 How it works:
