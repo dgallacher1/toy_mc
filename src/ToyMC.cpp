@@ -8,7 +8,7 @@ ToyMC::ToyMC(Int_t _seed)
   seed = _seed;
 }
 
-ToyMC::ToyMC())
+ToyMC::ToyMC()
 {
   Init();
 }
@@ -19,16 +19,14 @@ ToyMC::~ToyMC()
 }
 
 //Run a single experiment
-void ToyMC::RunToy(TTree *result_tree)
+TTree* ToyMC::RunToy()
 {
-  //Ensure we're using TRandom3
-  delete gRandom;
-  gRandom = new TRandom3;
+
   //Set the seed
   gRandom->SetSeed(seed);
 
   //Prep work
-  InverseCDF *invcdf= new InverseCDF();
+  InverseCDF *invcdf = new InverseCDF();
   LoadFunctions();
 
   //Set TPB Time binning for inverse cdf
@@ -36,23 +34,24 @@ void ToyMC::RunToy(TTree *result_tree)
   bins.push_back(-2e-12); bins.push_back(2e-12); bins.push_back(4e-12); bins.push_back(0.1);
   for (int k=4; bins[k-1]+0.1*pow(k-3.,1.7)<windowEnd; k++) bins.push_back(bins[k-1] + 0.1*pow(k-3.,1.5));
   bins.push_back(windowEnd);
-  TH1D *HistTPB= new TH1D("h_tpb_wls","Hist",bins.size()-1,&bins[0]);
-  HistTPB->Add(TPBPulseShape);
+  TH1D *HistTPB = new TH1D("h_tpb_wls","Hist",bins.size()-1,&bins[0]);
+  HistTPB->Add(fTPBPS);
   gTPBTime = invcdf->GetInverseHisto(HistTPB);
-
 
   //Make result tree
   vector<Double_t> times;
   Double_t edep = 0.0;
   Double_t shadowFraction = 0.0;
+  Int_t numHits = 0;
   Int_t numPhotons = 0;
   Int_t numPyrenePhotons = 0;
   Int_t numAP = 0;
   Int_t trialNum = 0;
   Int_t experimentNum = 0;
 
-  result_tree = new TTree("T","Result Tree");
+  TTree *result_tree = new TTree("T","Result Tree");
   result_tree->Branch("times",&times);
+  result_tree->Branch("numHits",&numHits);
   result_tree->Branch("edep",&edep,"edep/D");
   result_tree->Branch("numPhotons",&numPhotons,"numPhotons/I");
   result_tree->Branch("numPyrenePhotons",&numPyrenePhotons,"numPyrenePhotons/I");
@@ -69,18 +68,24 @@ void ToyMC::RunToy(TTree *result_tree)
       trialNum = iTrial;
       experimentNum = iExperiment;
       //Run the trial
-      DoTrial(&edep,&shadowFraction,&numPhotons,&numAP,&times);
+      DoTrial(edep,shadowFraction,numPhotons,numPyrenePhotons,numAP,times,numHits);
       //Fill ttree with results
-      tree->Fill();
+      result_tree->Fill();
+      times.clear();
+      numAP=0;
     }//End loop over trials
+
+    if(iExperiment%10==0)cout << "Completed "<< iExperiment<< " experiments."<<endl;
   }//End loop over experiments
   sw.Stop();
-  cout <<"Toy completed: "<< "Ran "<< numExperiments << " for " <<numTrials << "trials each. "<<endl;
+  cout <<"Toy completed: "<< "Ran "<< numExperiments << " experiments with " <<numTrials << " trials each. "<<endl;
   sw.Print();
+
+  return result_tree;
 }
 
 //Here's where we do the toy simulation
-void ToyMC::DoTrial(Double_t &edep, Double_t &shadowFraction, Int_t &numPhotons,Int_t &numPyrenePhotons, Double_t &numAP,vector<Double_t> &times)
+void ToyMC::DoTrial(Double_t &edep, Double_t &shadowFraction, Int_t &numPhotons,Int_t &numPyrenePhotons, Int_t &numAP ,vector<Double_t> &times,Int_t &numHits)
 {
   //Sample from our Landau distribution
   edep = fRandEnergy->GetRandom();
@@ -149,6 +154,7 @@ void ToyMC::DoTrial(Double_t &edep, Double_t &shadowFraction, Int_t &numPhotons,
     numAP++;
   }
 
+  numHits = times.size();
 }
 
 void ToyMC::LoadPDFs(TFile *SpectrumFile)
@@ -159,8 +165,8 @@ void ToyMC::LoadPDFs(TFile *SpectrumFile)
   TH1D *hPyreneSpec = (TH1D*) SpectrumFile->Get("hPyrene");
   TH1D *hTPBSpec = (TH1D*) SpectrumFile->Get("hTPB");
   TH1D *hLArSpec = (TH1D*) SpectrumFile->Get("hLAr");
-  TH1D *hAcrylicAttn = (TH1D*) SpectrumFile->Get("hAcrylic");
-  TH1D *hPMTEff= (TH1D*) SpectrumFile->Get("hPMTEff");
+  TH1D *hAcrylicAttn = (TH1D*) SpectrumFile->Get("hAcrylicAttn");
+  TH1D *hPMTEff = (TH1D*) SpectrumFile->Get("hPMTEff");
 
   //Get Inverse cdf versions of spectrums
   gPyreneSpec = invcdf->GetInverseHisto(hPyreneSpec);
@@ -191,7 +197,7 @@ void ToyMC::LoadFunctions()
   SetPyreneParameters(parampy);
 
   //Random Energy deposition following a landau distribution with tail to low energies
-  fRandEnergy = new TF1("fland", "TMath::Landau(-x,[0],[1])",0,6);
+  fRandEnergy = new TF1("fland", "TMath::Landau(-x,[0],[1])",0,5.4);
   fRandEnergy->SetParameter(0,-meanEnergy);
   fRandEnergy->SetParameter(1,0.2); //A guess-FIXME, gives a reasonable tail
 

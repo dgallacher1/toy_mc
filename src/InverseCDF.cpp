@@ -32,6 +32,7 @@ TGraph* InverseCDF::GetInverseHisto(TH1D* hPDF)
   return gInvCDF;
 }
 
+//Helper function to build inverse cdf TGraph from vectors instead of TH1
 TGraph* InverseCDF::GetInverse(vector<Double_t> x_vals, vector<Double_t> y_vals)
 {
   //Generate PDF first
@@ -41,11 +42,19 @@ TGraph* InverseCDF::GetInverse(vector<Double_t> x_vals, vector<Double_t> y_vals)
   return gInvCDF;
 }
 
+//Helper function to build PDF histogram from vectors
+TH1D*  InverseCDF::GetPDF(vector<Double_t> x_vals, vector<Double_t> y_vals)
+{
+  TH1D *hPDF = new TH1D("hPDF","",x_vals.size()-1,&x_vals[0]);
+  hPDF->SetContent(&y_vals[0]);
+  return hPDF;
+}
+
 
 /// Reset class
 void InverseCDF::Clear(Option_t *option)
 {
-  
+
 }
 
 ///Initialize parameters

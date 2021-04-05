@@ -56,7 +56,8 @@ void make_spectra(){
   fileout->cd();
   hPyrene->Write("hPyrene");
   hLAr->Write("hLAr");
+  hTPB->Write("hTPB");
   hPMT->Write("hPMTEff");
   hAcrylicAttn->Write("hAcrylicAttn");
-  
+
 }

@@ -5,14 +5,14 @@ ROOTGLIBS     = $(shell $(ROOTSYS)/bin/root-config --glibs)
 #Variables and options
 OPT           = -O2
 CXX           = g++
-CXXFLAGS      = -Wall -fopenmp -pthread $(OPT) $(ARCH) -fPIC -I$(ROOTSYS)/include
+CXXFLAGS      = -Wall -fopenmp -pthread $(OPT) $(ARCH) -fPIC -I$(ROOTSYS)/include -I/home/davidg/pyrene_toymc/src
 LD            = g++
 LDFLAGS       = $(OPT) -fopenmp -pthread $(ARCH)
-LIBS         	= $(ROOTGLIBS) -L/usr/X11R6/lib -lX11 -lXpm -lSpectrum
-DTREE_LIBS     = -L /home/davidg/pyrene_toymc/src -ltree
+LIBS         	= $(ROOTGLIBS) -L/usr/X11R6/lib -lX11 -lXpm -lSpectrum -lm -lMathMore
+DTREE_LIBS     = -L /home/davidg/pyrene_toymc/src -ltoymc
 
 #include all header files for linking here
-HDRS	= src/ToyMC.h src/InverseCDF.h
+HDRS	= InverseCDF.h ToyMC.h
 
 #Objects files for each class
 OBJS	=	$(HDRS:.h=.o)
@@ -23,14 +23,14 @@ SRCS	=	$(HDRS:.h=.cpp)
 
 all: lib Dict.C toyMC
 
-lib: libtree.so
+lib: libtoymc.so
 
-toyMC: $(OBJS)
+toyMC: main.o
 	@echo "Creating executable.."
 	$(LD) $(LDFLAGS) -o $@ $< $(LIBS) $(DTREE_LIBS)
 
-libtree.so: $(OBJS) Dict.o
-	$(LD) $(LDFLAGS) -shared -o libtree.so $^ $(LIBS)
+libtoymc.so: $(OBJS) Dict.o
+	$(LD) $(LDFLAGS) -shared -o libtoymc.so $^ $(LIBS)
 
 Dict.o: Dict.C
 	$(CXX) -c $(CXXFLAGS) $<
@@ -42,8 +42,8 @@ Dict.C: $(HDRS) LinkDef.h
 	$(CXX) -c $(CXXFLAGS) $<
 
 clean:
-	rm -f src/*.o
-	rm -f src/*~
-	rm -f src/*.so
-	rm -f src/Dict.*
+	rm -f *.o
+	rm -f *~
+	rm -f *.so
+	rm -f mDict.*
 	rm -f toyMC

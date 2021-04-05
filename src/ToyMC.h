@@ -11,14 +11,19 @@
 
 #include "TObject.h"
 #include "TH1.h"
+#include "TFile.h"
+#include "TGraph.h"
+#include "TTree.h"
 #include "TF1.h"
 #include "TH1D.h"
 #include "TRandom.h"
 #include "TMath.h"
 #include "TStopwatch.h"
 #include <Math/SpecFuncMathMore.h>
+#include "TROOT.h"
 
 #include "Util.h"
+#include "InverseCDF.h"
 
 #include <vector>
 #include <iostream>
@@ -66,9 +71,9 @@ public:
 
 
    ///Run the toyMC
-   void       RunToy(TTree *tree);
+   TTree*     RunToy();
    //Each trial is ran here
-   void       DoTrial(Double_t &edep, Double_t &shadowFraction, Int_t &numPhotons,Int_t &numPyrenePhotons, Double_t &numAP,vector<Double_t> &times);
+   void       DoTrial(Double_t &edep, Double_t &shadowFraction, Int_t &numPhotons,Int_t &numPyrenePhotons, Int_t &numAP,vector<Double_t> &times,Int_t &numHits);
 
 
    ///Set and Get the number of trials for this toy
@@ -121,7 +126,6 @@ public:
    //TF1 Functions for pulseshapes
    Double_t   LArPulseShape(Double_t *t,Double_t *par);
    Double_t   TPBPulseShape(Double_t *t,Double_t *par);
-   Double_t   PMTPulseShape(Double_t *t,Double_t *par);
 
 
    ClassDef(ToyMC,1)
