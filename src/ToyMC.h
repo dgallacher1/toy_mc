@@ -36,30 +36,33 @@ private:
   Int_t       seed;
   Int_t       numTrials;
   Int_t       numExperiments;
-  Double_t    windowEnd; //End of timing window in ns
-  Double_t    reflectionProb; //Probability to survive reflection
-  Double_t    pyrene_WLSE; // Probability of WLSing
-  Double_t    lightYield; // LAr light yield
-  Int_t       meanReflections; //Mean number of reflections Pyrene photons undergo
-  Double_t    meanEnergy;// Mean energy for the starting alpha
-  Double_t    APProb; //Afterpulse probability
+  Double_t    windowEnd;          // End of timing window in ns
+  Double_t    reflectionProb;     // Probability to survive reflection
+  Double_t    pyrene_WLSE;        // Probability of WLSing pyrene
+  Double_t    lightYield;         // LAr light yield
+  Int_t       meanReflections;    // Mean number of reflections Pyrene photons undergo
+  Double_t    meanEnergy;         // Mean energy for the starting alpha
+  Double_t    APProb;             // Combined Afterpulse probability
+  Double_t    quenching;          // Quenching factor
 
   //Distributions loaded
-  TGraph*       gPyreneSpec;
-  TGraph*       gTPBSpec;
-  TGraph*       gLArSpec;
-  TGraph*       gAcrylicAttn;
-  TGraph*       gPMTEff;
-  TGraph*       gTPBTime;
+  TGraph*       gPyreneSpec;      // Pyrene emission spectrum
+  TGraph*       gTPBSpec;         // TPB emission spectrum
+  TGraph*       gLArSpec;         // LAr emission specturm
+  TGraph*       gAcrylicAttn;     // Acrylic survival probability vs wavelength assuming 1m of travel distance
+  TGraph*       gPMTEff;          // PMT Efficiency vs wavelength
+  TGraph*       gTPBTime;         // TPB Time in inverseCDF config, for speeding up sims, faster than TF1->GetRandom()
+  TGraph*       gAr39Energy;      // Ar39 Beta energy spectrum from RAT
 
   //Timing functions
-  TF1*        fPMT;
-  TF1*        fPyrenePS;
-  TF1*        fTPBPS;
-  TF1*        fLArPS;
+  TF1*        fPMT;               // PMT AP timing distribution, considering 2 main AP functions
+  TF1*        fPyrenePS;          // Pyrene pulseshape, 2 exp model
+  TF1*        fTPBPS;             // TPB Pulseshape, from rat-deap
+  TF1*        fLArPS;             // LAr Pulseshape model from https://arxiv.org/abs/2001.09855
+  TF1*        fGeo;               // Geometric broadening of DEAP-3600 ER events from https://arxiv.org/abs/2001.09855
 
-  //Energy deposition
-  TF1*        fRandEnergy;
+  //Edep
+  TF1*        fRandEnergy;        // Landau distribution model for energy deposition
 
 
 public:
@@ -71,9 +74,10 @@ public:
 
 
    ///Run the toyMC
-   TTree*     RunToy();
+   TTree*     RunToy(Int_t type);
    //Each trial is ran here
-   void       DoTrial(Double_t &edep, Double_t &shadowFraction, Int_t &numPhotons,Int_t &numPyrenePhotons, Int_t &numAP,vector<Double_t> &times,Int_t &numHits);
+   void       DoNeckAlphaTrial(Double_t &edep, Double_t &shadowFraction, Int_t &numPhotons,Int_t &numPyrenePhotons, Int_t &numAP,vector<Double_t> &times,Int_t &numHits);
+   void       DoLArTrial(Int_t type, Double_t &edep, Double_t &shadowFraction, Int_t &numPhotons,Int_t &numPyrenePhotons, Int_t &numAP,vector<Double_t> &times,Int_t &numHits);
 
 
    ///Set and Get the number of trials for this toy
@@ -103,6 +107,10 @@ public:
    Double_t   GetMeanEnergy(){return meanEnergy;}
    void       SetMeanEnergy(Double_t _meanEnergy){meanEnergy = _meanEnergy;}
 
+   //Set and Get the quenching factors
+   Double_t   GetQuenchingFactor(){return quenching;}
+   void       SetQuenchingFactor(Double_t _quenching){quenching = _quenching;}
+
    //Set and get light yield for LAr
    Double_t   GetLightYield(){return lightYield;}
    void       SetLightYield(Double_t _lightYield){lightYield = _lightYield;}
@@ -126,6 +134,14 @@ public:
    //TF1 Functions for pulseshapes
    Double_t   LArPulseShape(Double_t *t,Double_t *par);
    Double_t   TPBPulseShape(Double_t *t,Double_t *par);
+
+   //Get Pulse-shape functions
+   TF1*       GetPMTPS(){return fPMT;}
+   TF1*       GetTPBPS(){return fTPBPS;}
+   TF1*       GetLArPS(){return fLArPS;}
+   TF1*       GetPyrenePS(){return fPyrenePS;}
+   TF1*       GetGeoPS(){return fGeo;}
+
 
 
    ClassDef(ToyMC,1)

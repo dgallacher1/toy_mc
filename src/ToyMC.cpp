@@ -19,7 +19,7 @@ ToyMC::~ToyMC()
 }
 
 //Run a single experiment
-TTree* ToyMC::RunToy()
+TTree* ToyMC::RunToy(Int_t type = 0)
 {
 
   //Set the seed
@@ -58,7 +58,7 @@ TTree* ToyMC::RunToy()
   result_tree->Branch("numAP",&numAP,"numAP/I");
   result_tree->Branch("shadowFraction",&shadowFraction,"shadowFraction/D");
   result_tree->Branch("trialNum",&trialNum,"trialNum/I");
-  result_tree->Branch("experimentNum",&numAP,"experimentNum/I");
+  result_tree->Branch("experimentNum",&experimentNum,"experimentNum/I");
 
   TStopwatch sw;
   //Loop over all experiments and trials and run a trial and fill tree.
@@ -68,7 +68,14 @@ TTree* ToyMC::RunToy()
       trialNum = iTrial;
       experimentNum = iExperiment;
       //Run the trial
-      DoTrial(edep,shadowFraction,numPhotons,numPyrenePhotons,numAP,times,numHits);
+      if(type==0)DoNeckAlphaTrial(edep,shadowFraction,numPhotons,numPyrenePhotons,numAP,times,numHits);
+      if(type==1)DoLArTrial(type,edep,shadowFraction,numPhotons,numPyrenePhotons,numAP,times,numHits);
+      if(type==2){
+        //Set parameters to beta/gamma parameters from rat-deap
+        Double_t paramlar[] = {0.225,2.2,0.045,75.5,0.73,1445.0};
+        SetLArParameters(paramlar);
+        DoLArTrial(type,edep,shadowFraction,numPhotons,numPyrenePhotons,numAP,times,numHits);
+      }
       //Fill ttree with results
       result_tree->Fill();
       times.clear();
@@ -80,15 +87,17 @@ TTree* ToyMC::RunToy()
   sw.Stop();
   cout <<"Toy completed: "<< "Ran "<< numExperiments << " experiments with " <<numTrials << " trials each. "<<endl;
   sw.Print();
-
   return result_tree;
 }
 
-//Here's where we do the toy simulation
-void ToyMC::DoTrial(Double_t &edep, Double_t &shadowFraction, Int_t &numPhotons,Int_t &numPyrenePhotons, Int_t &numAP ,vector<Double_t> &times,Int_t &numHits)
+//Here's where we do the toy simulation for neck-alphas
+void ToyMC::DoNeckAlphaTrial(Double_t &edep, Double_t &shadowFraction, Int_t &numPhotons,Int_t &numPyrenePhotons, Int_t &numAP ,vector<Double_t> &times,Int_t &numHits)
 {
-  //Sample from our Landau distribution
-  edep = fRandEnergy->GetRandom();
+  //Monoenergetic
+  edep = meanEnergy;
+  edep = edep*quenching;//Apply quenching
+  //fRandEnergy->GetRandom();
+
   //Can shadow half to all light
   shadowFraction = gRandom->Uniform(0.5,1.0);
   //Mean photon production based on this edep
@@ -110,9 +119,12 @@ void ToyMC::DoTrial(Double_t &edep, Double_t &shadowFraction, Int_t &numPhotons,
     wl=gTPBSpec->Eval(gRandom->Rndm());
 
     //Acrylic Attenuation is wavelength dependent (gAcrylicAttn is survival prob) so if we attenuate the photon, skip
-    if(gAcrylicAttn->Eval(wl) < gRandom->Rndm())continue;
+    if(wl<400.0)continue;
+    //if(gAcrylicAttn->Eval(wl) < gRandom->Rndm())continue;
     //PMT Efficiency
     if(gPMTEff->Eval(wl) < gRandom->Rndm())continue;
+    //Broaden pulse with geometric broadening from PS paper
+    t+=fGeo->GetRandom();
     times.push_back(t);//hit pmt sucessfully
 
     //After-pulsing
@@ -135,18 +147,70 @@ void ToyMC::DoTrial(Double_t &edep, Double_t &shadowFraction, Int_t &numPhotons,
     t+=fPyrenePS->GetRandom(); //Add delay time
     wl=gPyreneSpec->Eval(gRandom->Rndm());//Sample a random wavelength
 
-    //Sample from the number of reflections as a binomial with probability of 0.5
-    Int_t numReflections = gRandom->Binomial(2*meanReflections,0.5);
-    Double_t reflProb = pow(reflectionProb,numReflections);
-    //If we dont survive the successive reflections then kill this photon
-    if(reflProb < gRandom->Rndm())continue;
+    //Tranismission probability to inner detector
+    if(0.5 < gRandom->Rndm()) continue;
 
-    //Acrylic Attenuation is wavelength dependent (gAcrylicAttn is survival prob) so if we attenuate the photon, skip
-    if(gAcrylicAttn->Eval(wl) < gRandom->Rndm())continue;
-    //PMT Efficiency
-    if(gPMTEff->Eval(wl) < gRandom->Rndm())continue;
+    if(wl<400.0)continue; //Kill photons below 400nm
+
+    // //Sample from the number of reflections as a binomial with probability of 0.5
+    // Int_t numReflections = gRandom->Binomial(2*meanReflections,0.5);
+    // Double_t reflProb = pow(reflectionProb,numReflections);
+    // //If we dont survive the successive reflections then kill this photon
+    // if(reflProb < gRandom->Rndm())continue;
+    //
+    // //Acrylic Attenuation is wavelength dependent (gAcrylicAttn is survival prob) so if we attenuate the photon, skip
+    // if(gAcrylicAttn->Eval(wl) < gRandom->Rndm())continue;
+    // //PMT Efficiency
+    // if(gPMTEff->Eval(wl) < gRandom->Rndm())continue;
+
+    //Broaden pulse with geometric broadening from PS paper
+    t+=fGeo->GetRandom();
     times.push_back(t); //hit pmt sucessfully
 
+    //After-pulsing
+    if(APProb < gRandom->Rndm())continue;
+    t+=fPMT->GetRandom();
+    times.push_back(t);
+    numAP++;
+  }
+  numHits = times.size();
+}
+
+void ToyMC::DoLArTrial(Int_t type, Double_t &edep, Double_t &shadowFraction, Int_t &numPhotons,Int_t &numPyrenePhotons, Int_t &numAP ,vector<Double_t> &times,Int_t &numHits)
+{
+  //If we have type==1, NR, sample from a uniform energy distribution from 50-250 keV
+  if(type==1){
+    edep = gRandom->Uniform(0.05,0.25);
+    edep = edep*quenching;//Apply quenching
+  }
+  //If we have type==2, ER type, sample from Ar39 beta spectrum
+  else if(type==2){
+    edep = gAr39Energy->Eval(gRandom->Rndm());
+    edep = edep*quenching;//Apply quenching
+  }
+  //Mean photon production based on this edep
+  Double_t meanNumPhotons = edep*lightYield;
+  numPhotons = int(gRandom->Gaus(meanNumPhotons,sqrt(meanNumPhotons)));
+  Int_t numLArPhotons = numPhotons;
+  //Loop over LAr photons
+  for(Int_t iLAr = 0;iLAr<numLArPhotons;iLAr++)
+  {
+    Double_t t = 0.0; //T0 for each photon is 0
+    t+=fLArPS->GetRandom();//Get LAr scint time offset
+    Double_t wl = gLArSpec->Eval(gRandom->Rndm());//Evaluate the inverse cdf for a random wavelength to start with
+
+    //Add delay for TPB timing and swap to TPB wavelength, assumes 100% WLSE for TPB
+    t+=gTPBTime->Eval(gRandom->Rndm());
+    wl=gTPBSpec->Eval(gRandom->Rndm());
+
+    // //Acrylic Attenuation is wavelength dependent (gAcrylicAttn is survival prob) so if we attenuate the photon, skip
+    // if(gAcrylicAttn->Eval(wl) < gRandom->Rndm())continue;
+    if(wl<400.0)continue; //Kill photons below 400nm
+    //PMT Efficiency
+    if(gPMTEff->Eval(wl) < gRandom->Rndm())continue;
+    //Broaden pulse with geometric broadening from PS paper
+    t+=fGeo->GetRandom();
+    times.push_back(t); //hit pmt sucessfully
     //After-pulsing
     if(APProb < gRandom->Rndm())continue;
     t+=fPMT->GetRandom();
@@ -167,15 +231,21 @@ void ToyMC::LoadPDFs(TFile *SpectrumFile)
   TH1D *hLArSpec = (TH1D*) SpectrumFile->Get("hLAr");
   TH1D *hAcrylicAttn = (TH1D*) SpectrumFile->Get("hAcrylicAttn");
   TH1D *hPMTEff = (TH1D*) SpectrumFile->Get("hPMTEff");
+  TH1D *hAr39 = (TH1D*) SpectrumFile->Get("hAr39");
+
 
   //Get Inverse cdf versions of spectrums
   gPyreneSpec = invcdf->GetInverseHisto(hPyreneSpec);
   gTPBSpec = invcdf->GetInverseHisto(hTPBSpec);
   gLArSpec = invcdf->GetInverseHisto(hLArSpec);
 
+  //Inverse CDF of random energy deposition for ER events from Ar39 spectrum
+  gAr39Energy = invcdf->GetInverseHisto(hAr39);
+
   //PDFs of acrylic survival probability and pmt efficiency
   gAcrylicAttn = new TGraph(hAcrylicAttn);
   gPMTEff = new TGraph(hPMTEff);
+
 
 }
 
@@ -192,7 +262,7 @@ void ToyMC::LoadFunctions()
   SetLArParameters(paramlar);
 
   //Default Pyrene_PS Pulse-shape, 2 exponential
-  Double_t parampy[]= {0.8,250,0.2,105};
+  Double_t parampy[]= {0.669,175.6,0.331,226.4};
   fPyrenePS = new TF1("fPyrenePS","[0]*exp(-x/[1])+[2]*exp(-x/[3])",0.001,windowEnd);
   SetPyreneParameters(parampy);
 
@@ -201,8 +271,12 @@ void ToyMC::LoadFunctions()
   fRandEnergy->SetParameter(0,-meanEnergy);
   fRandEnergy->SetParameter(1,0.2); //A guess-FIXME, gives a reasonable tail
 
+  //Geometric broadening from PS paper
+  fGeo = new TF1("fGeo","TMath::Gaus(x,[0],[1])",-30,30);
+  fGeo->SetParameters(-1.8,5.1); //Values from PS Paper
+
   //PMT AP Pulse-shape, from liquid Ar pulseshape paper (D3600)
-  Double_t parampmt[]= {0.67,1660,680,0.33,6300,1350};
+  Double_t parampmt[]= {0.33,1660,680,0.67,6300,1350};
   fPMT = new TF1("fPMT","[0]*TMath::Gaus(x,[1],[2])+[3]*TMath::Gaus(x,[4],[5])",0.001,windowEnd);
   SetPMTParameters(parampmt);
 

@@ -53,11 +53,22 @@ void make_spectra(){
     hAcrylicAttn->SetBinContent(i,prob);
   }
 
+
+  RAT::DBLinkPtr lbeta = rdb->GetLink("SPECTRUM","Ar39_beta");
+  vector< double > ebeta = lbeta->GetDArray("spec_e");
+  vector< double > abeta = lbeta->GetDArray("spec_mag");
+
+  TH1D *hAr39 = new TH1D("hAr39","hAr39",ebeta.size()-1,&ebeta[0]);
+  hAr39->SetContent(&abeta[0]);
+
+
   fileout->cd();
   hPyrene->Write("hPyrene");
   hLAr->Write("hLAr");
   hTPB->Write("hTPB");
   hPMT->Write("hPMTEff");
   hAcrylicAttn->Write("hAcrylicAttn");
+  hAr39->Write("hAr39");
+  fileout->Close();
 
 }
