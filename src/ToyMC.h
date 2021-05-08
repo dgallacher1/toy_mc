@@ -44,6 +44,7 @@ private:
   Double_t    meanEnergy;         // Mean energy for the starting alpha
   Double_t    APProb;             // Combined Afterpulse probability
   Double_t    quenching;          // Quenching factor
+  Int_t       fAP_mode;           // Enable Afterpulsing or not, default == on
 
   //Distributions loaded
   TGraph*       gPyreneSpec;      // Pyrene emission spectrum
@@ -131,6 +132,11 @@ public:
    Double_t   GetWindow(){return windowEnd;}
    void       SetWindow(Double_t _windowEnd){ windowEnd = _windowEnd;}
 
+   //Enable afterpulsing or not
+   Int_t      GetAfterPulsing(){return fAP_mode;}
+   void       SetAfterPulsing(Int_t _fAP_mode){ fAP_mode = _fAP_mode;}
+
+
    //TF1 Functions for pulseshapes
    Double_t   LArPulseShape(Double_t *t,Double_t *par);
    Double_t   TPBPulseShape(Double_t *t,Double_t *par);
@@ -144,7 +150,7 @@ public:
 
 
 
-   ClassDef(ToyMC,1)
+   ClassDef(ToyMC,2)
 };
 
 #endif

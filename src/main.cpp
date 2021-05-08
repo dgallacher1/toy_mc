@@ -30,12 +30,13 @@ int main(int argc, char **argv)
   int type = 0;
   int numTrials = 10;
   int numExperiments = 1;
+  int ap_mode = 1;//Default is afterpulsing enabled
   string foutname = "output";
 
   // Parse the command line arguments.
   vector< string > argsVec = ParseCommandLineArguments(argc, argv);
   if(argc<5){
-    cerr << "Usage: " << argv[0] << " seed type(0==N.A, 1== NR, 2==ER) numTrials numExperiments fileoutName(optional)" << endl;
+    cerr << "Usage: " << argv[0] << " seed type(0==N.A, 1== NR, 2==ER) numTrials numExperiments fileoutName(optional) afterpulsing on/off(1 == on, 0 == off [optional])" << endl;
     return 1;
   }
 
@@ -43,7 +44,8 @@ int main(int argc, char **argv)
   type = atoi(argsVec[2].c_str());
   numTrials = atoi(argsVec[3].c_str());
   numExperiments = atoi(argsVec[4].c_str());
-  if(argc==6) foutname = argsVec[5];
+  if(argc > 5) foutname = argsVec[5];
+  if(argc==7) ap_mode = atoi(argsVec[6].c_str());
 
   TFile *DataFile = new TFile("../dat/spectras.root","READ");
 
@@ -57,9 +59,10 @@ int main(int argc, char **argv)
   the_toy->LoadPDFs(DataFile);
   the_toy->SetQuenchingFactor(quench);
   the_toy->SetLightYield(2000);//Artifically reduce light yield in order to speed up simulations
+  the_toy->SetAfterPulsing(ap_mode);//Turn afterpulsing on/off (1 == on, 0 == off)
   //To change parameters, call it after LoadFunctions()
 
-  string filename = "../output/"+foutname+"_"+Form("%i.root",type);
+  string filename = "../output/"+foutname+Form("_ap_%i_type_%i.root",ap_mode,type);
   TFile *fileout = new TFile(filename.c_str(),"RECREATE");
 
   //Run the toy MC

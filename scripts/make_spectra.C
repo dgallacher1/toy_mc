@@ -8,12 +8,16 @@ void make_spectra(){
 
   RAT::DB *rdb = RAT::DB::Get();
 
-  RAT::DBLinkPtr lpyrene = rdb->GetLink("OPTICS","pyrene_PS");
-  vector< double > wlpy = lpyrene->GetDArray("WLSCOMPONENT_value1");
-  vector< double > amppy = lpyrene->GetDArray("WLSCOMPONENT_value2");
+  TFile *fileinPyrene = new TFile("../dat/Pyrene99gradeDec2020.root","READ");
+  TH1D *hPyrene = (TH1D*)fileinPyrene->Get("15PercentPyrenePS99grade");
+  
 
-  TH1D *hPyrene = new TH1D("hPyrene","hPyrene",wlpy.size()-1,&wlpy[0]);
-  hPyrene->SetContent(&amppy[0]);
+  // RAT::DBLinkPtr lpyrene = rdb->GetLink("OPTICS","pyrene_PS");
+  // vector< double > wlpy = lpyrene->GetDArray("WLSCOMPONENT_value1");
+  // vector< double > amppy = lpyrene->GetDArray("WLSCOMPONENT_value2");
+  //
+  // TH1D *hPyrene = new TH1D("hPyrene","hPyrene",wlpy.size()-1,&wlpy[0]);
+  // hPyrene->SetContent(&amppy[0]);
 
   RAT::DBLinkPtr llar = rdb->GetLink("OPTICS","liquid_Ar");
   vector< double > wllar = llar->GetDArray("SCINTILLATION_value1");

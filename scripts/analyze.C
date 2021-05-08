@@ -6,6 +6,7 @@
 
 TH1D *CalculatefPyrene(TTree *t,double winLow, double winHigh);
 
+gSystem->Load("libtoymc");
 
 void analyze(string filename="output_0.root"){
 
@@ -14,9 +15,11 @@ void analyze(string filename="output_0.root"){
   path+=filename;
   cout << "Reading.. " << path <<endl;
   TFile *fileinNA = new TFile(path.c_str());
-  string pathNR = "../output/output_1.root";
+  string pathNR = path.substr(0,path.find(".root")-1);
+  pathNR+="1.root";
   TFile *fileinNR = new TFile(pathNR.c_str());
-  string pathER = "../output/output_2.root";
+  string pathER = path.substr(0,path.find(".root")-1);
+  pathER+="2.root";
   TFile *fileinER = new TFile(pathER.c_str());
 
 
@@ -35,20 +38,25 @@ void analyze(string filename="output_0.root"){
   tree->Draw(Form("times>>hp(%i,-100,%i)",nbins,high));
   TH1D *hFraction = (TH1D*)gPad->GetPrimitive("hp");
   hFraction->SetTitle("PMT Hit time distribution;Time[ns];Count");
+  //hFraction->Scale(1.0/hFraction->GetBinContent(hFraction->GetMaximumBin()));
   hFraction->Scale(1.0/hFraction->Integral());
 
   //Read in LAr NR's
   treeNR->Draw(Form("times>>hp1(%i,-100,%i)",nbins,high));
   TH1D *hFractionNR = (TH1D*)gPad->GetPrimitive("hp1");
   hFractionNR->SetTitle("PMT Hit time distribution;Time[ns];Count");
+  //hFractionNR->Scale(1.0/hFractionNR->GetBinContent(hFractionNR->GetMaximumBin()));
   hFractionNR->Scale(1.0/hFractionNR->Integral());
+
   hFractionNR->SetLineColor(kBlue);
 
   //Read in LAr NR's
   treeER->Draw(Form("times>>hp2(%i,-100,%i)",nbins,high));
   TH1D *hFractionER = (TH1D*)gPad->GetPrimitive("hp2");
   hFractionER->SetTitle("PMT Hit time distribution;Time[ns];Count");
+  //hFractionER->Scale(1.0/hFractionER->GetBinContent(hFractionER->GetMaximumBin()));
   hFractionER->Scale(1.0/hFractionER->Integral());
+
   hFractionER->SetLineColor(kRed);
 
   c1->cd(1);
@@ -196,14 +204,14 @@ void analyze(string filename="output_0.root"){
   hFractionNR->Draw("same");
   gPad->SetLogy();
   TLegend *leg4 = new TLegend(0.3,0.6,0.9,0.9);
-  leg4->AddEntry(hFraction,"Pyrene+PS Inlet Alphas Pulseshape","lp");
+  leg4->AddEntry(hFraction,"PPS Inlet Alphas Pulseshape","lp");
   leg4->AddEntry(hFractionNR,"Bulk LAr NR-like Pulseshape","lp");
   leg4->SetFillStyle(3001);
   leg4->Draw("same");
 
   c4->cd(2);
   hFpyreneNANR->SetLineColor(fStyle->Color(0));
-  hFpyreneNR->SetTitle("Fast MC Optimized PSD Comparison;fPPS; Intensity [AU]");
+  hFpyreneNR->SetTitle("Fast MC Optimized PSD Comparison; FPyrene; Intensity [AU]");
   hFpyreneNR->SetLineColor(fStyle->Color(1));
   hFpyreneNR->Draw();
   hFpyreneNR->GetYaxis()->SetTitleOffset(2);
@@ -217,7 +225,12 @@ void analyze(string filename="output_0.root"){
   c4->Print("../plots/nice_plot.pdf");
 
   TFile *filePlots = new TFile("../plots/analysis_plots.root","RECREATE");
-  filePlots->Write();
+  hFpyreneNANR->Write();
+  hFpyreneNR->Write();
+  hFpyreneNAER->Write();
+  hFpyreneER->Write();
+  hFraction->Write();
+  hFractionNR->Write();
   filePlots->Close();
 }
 

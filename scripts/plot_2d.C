@@ -18,9 +18,11 @@ void plot_2d(string filename="output_0.root"){
     path+=filename;
     cout << "Reading.. " << path <<endl;
     TFile *fileinNA = new TFile(path.c_str());
-    string pathNR = "../output/output_1.root";
+    string pathNR = path.substr(0,path.find(".root")-1);
+    pathNR+="1.root";
     TFile *fileinNR = new TFile(pathNR.c_str());
-    string pathER = "../output/output_2.root";
+    string pathER = path.substr(0,path.find(".root")-1);
+    pathER+="2.root";
     TFile *fileinER = new TFile(pathER.c_str());
 
 
@@ -46,6 +48,31 @@ void plot_2d(string filename="output_0.root"){
 
     hFpENR->Draw();
     hFpENANR->Draw("same");
+    c1->Print("../plots/fpyrene_vs_pe.pdf");
+
+
+    TCanvas *c2 = new TCanvas("c2","Quantiles",1000,600);
+    c2->Divide(2,1);
+    c2->cd(1);
+    tree->Draw("numHits>>h1");
+    TH1D *hPE_NA = (TH1D*)gPad->GetPrimitive("h1");
+    hPE_NA->SetTitle("PE Distribution;PE;Count");
+    hPE_NA->SetLineColor(fStyle->Color(0));
+    hPE_NA->Draw();
+    c2->cd(2);
+    const int nq = 4;
+    Double_t xq[nq];
+    Double_t yq[nq];
+    for(int i=0;i<nq;i++) xq[i] = Float_t(i+1)/nq;
+    hPE_NA->GetQuantiles(nq,yq,xq);
+    TGraph *gQ = new TGraph(nq,yq,xq);
+    gQ->SetTitle("Quartiles of PE Distribution;PE;Integral");
+    gQ->SetMarkerStyle(21);
+    gQ->Draw("ALP");
+
+    c2->Print("../plots/quartiles.pdf");
+    cout << "Lowest Energy Quartile cut-off at PE = "<< yq[0]<<endl;
+
 
 
 }
@@ -54,7 +81,8 @@ void plot_2d(string filename="output_0.root"){
 TH2D *CalculatefPyrenevsEnergy(TTree *t, double winLow, double winHigh){
 
   Double_t windowEnd = 10000.0;
-  TH2D *hFpyrene = new TH2D("",Form("PE vs Pyrene PSD [%3.2f,%3.2f ns];PE;fPyreneNR",winLow,winHigh),100,0,5000,50,0,1);
+  Double_t rescale =17.5; //40000/2000
+  TH2D *hFpyrene = new TH2D("",Form("PE vs Pyrene PSD [%3.2f,%3.2f ns];PE;fPyreneNR",winLow,winHigh),100,0,25000,50,0,1);
 
   vector<Double_t> *times = 0;
   Int_t numHits;
@@ -81,7 +109,7 @@ TH2D *CalculatefPyrenevsEnergy(TTree *t, double winLow, double winHigh){
       if((*times)[i] > winLow && (*times)[i] < windowEnd) integral++;
     }
     fPyrene = fPyrene/integral;
-    Int_t PE = numHits;
+    Int_t PE = numHits*rescale;
     hFpyrene->Fill(PE,fPyrene);
     //cout << "Num photons = "<<numPh << " PDE = " << (numHits-numAP)/double(numPh)<<endl;
   }

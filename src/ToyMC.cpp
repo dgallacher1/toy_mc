@@ -59,6 +59,7 @@ TTree* ToyMC::RunToy(Int_t type = 0)
   result_tree->Branch("shadowFraction",&shadowFraction,"shadowFraction/D");
   result_tree->Branch("trialNum",&trialNum,"trialNum/I");
   result_tree->Branch("experimentNum",&experimentNum,"experimentNum/I");
+  result_tree->Branch("seed",&seed,"seed/I");
 
   TStopwatch sw;
   //Loop over all experiments and trials and run a trial and fill tree.
@@ -119,20 +120,25 @@ void ToyMC::DoNeckAlphaTrial(Double_t &edep, Double_t &shadowFraction, Int_t &nu
     wl=gTPBSpec->Eval(gRandom->Rndm());
 
     //Acrylic Attenuation is wavelength dependent (gAcrylicAttn is survival prob) so if we attenuate the photon, skip
-    if(wl<400.0)continue;
+    if(wl<400.0) continue;
     //if(gAcrylicAttn->Eval(wl) < gRandom->Rndm())continue;
+
     //PMT Efficiency
-    if(gPMTEff->Eval(wl) < gRandom->Rndm())continue;
+    if(gPMTEff->Eval(wl) < gRandom->Rndm()) continue;
+
     //Broaden pulse with geometric broadening from PS paper
     t+=fGeo->GetRandom();
     times.push_back(t);//hit pmt sucessfully
 
     //After-pulsing
-    if(APProb < gRandom->Rndm())continue;
-    t+=fPMT->GetRandom();
-    times.push_back(t);
-    numAP++;
-  }
+    if(fAP_mode)
+    {
+      if(APProb < gRandom->Rndm())continue;
+      t+=fPMT->GetRandom();
+      times.push_back(t);
+      numAP++;
+    }
+  }//End loop over LAr photons
 
   //Loop over pyrene photons
   for(Int_t iPy = 0;iPy<numPyrenePhotons;iPy++)
@@ -147,11 +153,12 @@ void ToyMC::DoNeckAlphaTrial(Double_t &edep, Double_t &shadowFraction, Int_t &nu
     t+=fPyrenePS->GetRandom(); //Add delay time
     wl=gPyreneSpec->Eval(gRandom->Rndm());//Sample a random wavelength
 
-    //Tranismission probability to inner detector
+    //Tranismission probability to transmit down into inner detector
     if(0.5 < gRandom->Rndm()) continue;
 
     if(wl<400.0)continue; //Kill photons below 400nm
 
+    //Previous checks for reflections and Acrylic attenuation, removed for simplicity
     // //Sample from the number of reflections as a binomial with probability of 0.5
     // Int_t numReflections = gRandom->Binomial(2*meanReflections,0.5);
     // Double_t reflProb = pow(reflectionProb,numReflections);
@@ -168,23 +175,29 @@ void ToyMC::DoNeckAlphaTrial(Double_t &edep, Double_t &shadowFraction, Int_t &nu
     times.push_back(t); //hit pmt sucessfully
 
     //After-pulsing
-    if(APProb < gRandom->Rndm())continue;
-    t+=fPMT->GetRandom();
-    times.push_back(t);
-    numAP++;
-  }
+    if(fAP_mode)
+    {
+      if(APProb < gRandom->Rndm()) continue;
+      t+=fPMT->GetRandom();
+      times.push_back(t);
+      numAP++;
+    }
+
+  }//End loop over photons
   numHits = times.size();
 }
 
 void ToyMC::DoLArTrial(Int_t type, Double_t &edep, Double_t &shadowFraction, Int_t &numPhotons,Int_t &numPyrenePhotons, Int_t &numAP ,vector<Double_t> &times,Int_t &numHits)
 {
   //If we have type==1, NR, sample from a uniform energy distribution from 50-250 keV
-  if(type==1){
+  if(type==1)
+  {
     edep = gRandom->Uniform(0.05,0.25);
     edep = edep*quenching;//Apply quenching
   }
   //If we have type==2, ER type, sample from Ar39 beta spectrum
-  else if(type==2){
+  else if(type==2)
+  {
     edep = gAr39Energy->Eval(gRandom->Rndm());
     edep = edep*quenching;//Apply quenching
   }
@@ -212,11 +225,15 @@ void ToyMC::DoLArTrial(Int_t type, Double_t &edep, Double_t &shadowFraction, Int
     t+=fGeo->GetRandom();
     times.push_back(t); //hit pmt sucessfully
     //After-pulsing
-    if(APProb < gRandom->Rndm())continue;
-    t+=fPMT->GetRandom();
-    times.push_back(t);
-    numAP++;
-  }
+    if(fAP_mode)
+    {
+      if(APProb < gRandom->Rndm())continue;
+      t+=fPMT->GetRandom();
+      times.push_back(t);
+      numAP++;
+    }
+
+  }//End loop over Photons
 
   numHits = times.size();
 }
@@ -261,9 +278,9 @@ void ToyMC::LoadFunctions()
   fLArPS = new TF1("fLArPS",this,&ToyMC::LArPulseShape,0.001,windowEnd,6,"ToyMC","LArPulseShape");
   SetLArParameters(paramlar);
 
-  //Default Pyrene_PS Pulse-shape, 2 exponential
-  Double_t parampy[]= {0.669,175.6,0.331,226.4};
-  fPyrenePS = new TF1("fPyrenePS","[0]*exp(-x/[1])+[2]*exp(-x/[3])",0.001,windowEnd);
+  //Default Pyrene_PS Pulse-shape, 3 exponential (1 monomer, 2 excimer) at LAr temps
+  Double_t parampy[]= {0.68,293,0.11,87.0,0.23,239};
+  fPyrenePS = new TF1("fPyrenePS","[0]*exp(-x/[1])+[2]*exp(-x/[3])+[4]*exp(-x/[5])",0.001,windowEnd);
   SetPyreneParameters(parampy);
 
   //Random Energy deposition following a landau distribution with tail to low energies
@@ -339,6 +356,7 @@ void ToyMC::Clear(Option_t *option)
   lightYield = 0.0; //Photons/MeV
   meanEnergy = 0.0;
   APProb = 0.0;
+  fAP_mode = 1;
 
   delete gPyreneSpec;
   delete gLArSpec;
@@ -367,5 +385,6 @@ void ToyMC::Init()
   meanReflections = 1; //Mean of a binomial for number of reflections
   meanEnergy = 5.4;//MeV
   APProb = 0.075;//
+  fAP_mode = 1;
 
 }
