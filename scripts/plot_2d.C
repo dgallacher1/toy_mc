@@ -9,7 +9,7 @@ Date: April 2021
 #include <math.h>       /* isnan, sqrt */
 
 
-TH1D *CalculatefPyrenevsEnergy(TTree *t,double winLow, double winHigh);
+TH2D *CalculatefPyrenevsEnergy(TTree *t,double winLow, double winHigh);
 
 void plot_2d(string filename="output_0.root"){
     fStyle->DEAPStyle();
@@ -81,8 +81,8 @@ void plot_2d(string filename="output_0.root"){
 TH2D *CalculatefPyrenevsEnergy(TTree *t, double winLow, double winHigh){
 
   Double_t windowEnd = 10000.0;
-  Double_t rescale =17.5; //40000/2000
-  TH2D *hFpyrene = new TH2D("",Form("PE vs Pyrene PSD [%3.2f,%3.2f ns];PE;fPyreneNR",winLow,winHigh),100,0,25000,50,0,1);
+  Double_t rescale =1.0; //40000/2000
+  TH2D *hFpyrene = new TH2D("",Form("PE vs Pyrene PSD [%3.2f,%3.2f ns];PE;fPyreneNR",winLow,winHigh),100,0,5000,50,0,1);
 
   vector<Double_t> *times = 0;
   Int_t numHits;

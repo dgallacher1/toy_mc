@@ -60,7 +60,7 @@ void draw_plot_paper(string filename="output_0.root")
 
     gPad->SetLogy();
     hFractionNR->Draw();
-    hFraction->SetTitle("Fast MC Pulseshape Comparison;Photon Arrival Time [ns];Intensity [AU]");
+    hFractionNR->SetTitle("Fast MC Pulseshape Comparison;Photon Arrival Time [ns];Intensity [AU]");
     hFractionNR->GetYaxis()->SetTitleOffset(1.5);
     hFraction->Draw("same");
     TLegend *leg = new TLegend(0.5,0.6,0.9,0.9);
@@ -82,7 +82,7 @@ void draw_plot_paper(string filename="output_0.root")
     TH1D *hFpyreneNANR = CalculatefPyrene(tree,windowLowNR,windowHighNR,PE_cut_lowest_quartile);
     TH1D *hFpyreneNR = CalculatefPyrene(treeNR,windowLowNR,windowHighNR,1e5);//No PE Cut on NR events,(Full acceptance)
 
-
+    TH1D *hFPPS = (TH1D*)hFpyreneNANR->Clone();
     hFpyreneNANR->Scale(1.0/hFpyreneNANR->Integral());
     hFpyreneNR->Scale(1.0/hFpyreneNR->Integral());
     hFpyreneNR->Draw();
@@ -114,8 +114,28 @@ void draw_plot_paper(string filename="output_0.root")
     //legFp->AddEntry(hOv,"Overlap","lp");
     legFp->SetFillStyle(3001);
     legFp->Draw("same");
-
     c2->Print("../plots/Fpyrene_draw_plot_paper.pdf");
+
+    //Calculate leakage
+
+    //Assume 100% acceptance for LAr NRs
+    Double_t nr_start = hFpyreneNR->GetBinLowEdge(hFpyreneNR->FindFirstBinAbove(0));
+    printf("NR Distribution Start = %f \n",nr_start);
+
+    Int_t nEvts = tree->GetEntries();
+    //Integral of PPS distribution from start of NR distribution
+    Double_t pps_leakage_n = hFPPS->Integral(hFPPS->FindBin(nr_start),hFPPS->GetNbinsX());
+    printf("Leakage of PPS into NR region = %f \n",pps_leakage_n);
+
+    //Find upper limit
+    if (!gROOT->GetClass("TFeldmanCousins")) gSystem->Load("libPhysics");
+    TFeldmanCousins f;
+    Double_t upper_lim = f.CalculateUpperLimit(pps_leakage_n,0); //90% Upper limit on number of events with 0 background
+    printf("Upper limit PPS into NR region = %f \n",upper_lim);
+    Double_t leak = upper_lim/float(nEvts);//Leakage fraction
+    printf("90% UL on LF for PPS into NR region = %f \n",leak);
+
+
 
 }
 
