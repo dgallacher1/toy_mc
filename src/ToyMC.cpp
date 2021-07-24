@@ -101,6 +101,11 @@ void ToyMC::DoNeckAlphaTrial(Double_t &edep, Double_t &shadowFraction, Int_t &nu
 
   //Can shadow half to all light
   shadowFraction = gRandom->Uniform(0.5,1.0);
+  //Test of exponential shadowing
+  // TF1 f("f","exp(10*x)",0.5,1.0);
+  // shadowFraction = f.GetRandom();
+
+
   //Mean photon production based on this edep
   Double_t meanNumPhotons = edep*lightYield;
   numPhotons = int(gRandom->Gaus(meanNumPhotons,sqrt(meanNumPhotons)));
@@ -296,6 +301,7 @@ void ToyMC::LoadFunctions()
   Double_t parampmt[]= {0.33,1660,680,0.67,6300,1350};
   fPMT = new TF1("fPMT","[0]*TMath::Gaus(x,[1],[2])+[3]*TMath::Gaus(x,[4],[5])",0.001,windowEnd);
   SetPMTParameters(parampmt);
+
 
 }
 

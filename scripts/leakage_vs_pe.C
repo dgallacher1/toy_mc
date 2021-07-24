@@ -52,19 +52,21 @@ void leakage_vs_pe(string filename="output_0.root")
     TH1D *hFPPS = NULL;
     for(int iBin =1; iBin < hFpENANR->GetNbinsX();iBin++){
       // Get the projections, increasing one bin at a time, last leakage is then the total leakage
-      hFPPS = (TH1D*) hFpENANR->ProjectionY(Form("_na_%i",iBin),binstart,iBin+1);
+      //hFPPS = (TH1D*) hFpENANR->ProjectionY(Form("_na_%i",iBin),1,iBin+1);
       //printf("NR Distribution Start = %f \n",nr_start);
       //Integral of PPS distribution from start of NR distribution
       Double_t pps_leakage_n = 0;
-      pps_leakage_n = hFPPS->Integral(hFPPS->FindBin(bin_start),hFPPS->GetNbinsX());
+      //pps_leakage_n = hFPPS->Integral(hFPPS->FindBin(bin_start),hFPPS->GetNbinsX());
 
-      //Int_t entries = 0;
-      // for(int iY=1;iY<hFpENANR->GetNbinsY();iY++){
-      //   //Assume 100% acceptance for LAr NRs
-      //   //Find first bin above 0 for NR distribution in this bin
-      //   if(iY > bin_start) pps_leakage_n += hFpENANR->GetBinContent(iBin,iY);
-      //   entries += hFpENANR->GetBinContent(iBin,iY);
-      // }
+      Int_t entries = 0;
+      for(int iY=1;iY<hFpENANR->GetNbinsY();iY++){
+        //Assume 100% acceptance for LAr NRs
+        //Find first bin above 0 for NR distribution in this bin
+        for(int iX = 1;iX < iBin;iX++){
+          if(iY > bin_start) pps_leakage_n += hFpENANR->GetBinContent(iX,iY);
+        }
+        entries += hFpENANR->GetBinContent(iBin,iY);
+      }
 
       //printf("Leakage of PPS into NR region = %f \n",pps_leakage_n);
       //90% Upper limit on number of events with 0 background
@@ -83,6 +85,7 @@ void leakage_vs_pe(string filename="output_0.root")
     hLeak->SetLineColor(fStyle->Color(0));
     hLeak->Draw();
     gPad->SetLogy();
+    gPad->Print("../plots/leakage_vs_pe.pdf");
 
 
 }

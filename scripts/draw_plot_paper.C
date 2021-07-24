@@ -10,7 +10,7 @@
 TH1D *CalculatefPyrene(TTree *t,double winLow, double winHigh,double PE_cut);
 gSystem->Load("libtoymc");
 
-void draw_plot_paper(string filename="output_0.root")
+void draw_plot_paper(string filename="default_PLQY_ap_1_type_0.root")
 {
     //DEAP Style settings
     fStyle->DEAPStyle();
@@ -59,8 +59,9 @@ void draw_plot_paper(string filename="output_0.root")
     hFractionNR->SetLineColor(g_index);
 
     gPad->SetLogy();
+    gPad->SetLogx();
     hFractionNR->Draw();
-    hFractionNR->SetTitle("Fast MC Pulseshape Comparison;Photon Arrival Time [ns];Intensity [AU]");
+    hFractionNR->SetTitle("Toy MC Pulseshape Comparison;Photon Arrival Time [ns];Intensity [AU]");
     hFractionNR->GetYaxis()->SetTitleOffset(1.5);
     hFraction->Draw("same");
     TLegend *leg = new TLegend(0.5,0.6,0.9,0.9);
@@ -77,7 +78,10 @@ void draw_plot_paper(string filename="output_0.root")
     Double_t windowHighNR = 40.0;
     Double_t windowLowER = 60.0; // ER rejection
     Double_t windowHighER = 400.0;
-    Double_t PE_cut_lowest_quartile = 1400; //from Plot_2d.C, With 2000 Ph/MeV LY
+    //Double_t PE_cut_lowest_quartile = 8845; //from Plot_2d.C, With 20000 Ph/MeV LY
+    Double_t PE_cut_lowest_quartile = 15166; //from Plot_2d.C, With 20000 Ph/MeV LY
+    //Double_t PE_cut_lowest_quartile = 1e5; //from Plot_2d.C, With 20000 Ph/MeV LY
+
 
     TH1D *hFpyreneNANR = CalculatefPyrene(tree,windowLowNR,windowHighNR,PE_cut_lowest_quartile);
     TH1D *hFpyreneNR = CalculatefPyrene(treeNR,windowLowNR,windowHighNR,1e5);//No PE Cut on NR events,(Full acceptance)
@@ -104,7 +108,7 @@ void draw_plot_paper(string filename="output_0.root")
     hOv->SetFillStyle(3001);
     hOv->SetFillColorAlpha(kMagenta,0.5);
     cout <<"Overlap = " << hOv->Integral() << endl;
-    hFpyreneNR->SetTitle("Fast MC Optimized PSD Comparison; FPyrene; Intensity [AU]");
+    hFpyreneNR->SetTitle("Toy MC Optimized PSD Comparison; FPyrene; Intensity [AU]");
     hFpyreneNANR->SetLineColor(o_index);
     hFpyreneNR->SetLineColor(g_index);
     hFpyreneNR->GetYaxis()->SetTitleOffset(1.5);
@@ -118,8 +122,14 @@ void draw_plot_paper(string filename="output_0.root")
 
     //Calculate leakage
 
-    //Assume 100% acceptance for LAr NRs
-    Double_t nr_start = hFpyreneNR->GetBinLowEdge(hFpyreneNR->FindFirstBinAbove(0));
+    //Assume 90% acceptance for LAr NRs
+    TH1D *hLArCumu = (TH1D*) hFpyreneNR->GetCumulative();
+    Double_t thresh = hLArCumu->GetBinCenter(hLArCumu->FindFirstBinAbove(0.1));
+    cout << "90 % acceptance thresh = " <<thresh<<endl;
+    //hLArCumu->Draw("same");
+
+    //Double_t nr_start = hFpyreneNR->GetBinLowEdge(hFpyreneNR->FindFirstBinAbove(0));
+    Double_t nr_start = thresh;
     printf("NR Distribution Start = %f \n",nr_start);
 
     Int_t nEvts = tree->GetEntries();
@@ -134,7 +144,6 @@ void draw_plot_paper(string filename="output_0.root")
     printf("Upper limit PPS into NR region = %f \n",upper_lim);
     Double_t leak = upper_lim/float(nEvts);//Leakage fraction
     printf("90% UL on LF for PPS into NR region = %f \n",leak);
-
 
 
 }
@@ -161,7 +170,7 @@ TH1D *CalculatefPyrene(TTree *t, double winLow, double winHigh,double PE_cut){
     if(!times)continue;
     const int num = (*times).size();
     if(num==0)continue;
-    if(numHits > PE_cut)continue; //introduce a PE Cut
+    if(numHits > PE_cut) continue; //introduce a PE Cut
     for(int i=0;i<numHits-1;i++){
       if((*times)[i] > winLow && (*times)[i] < winHigh) fPyrene++;
       if((*times)[i] > winLow && (*times)[i] < windowEnd) integral++;

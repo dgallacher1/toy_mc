@@ -49,8 +49,8 @@ int main(int argc, char **argv)
 
   TFile *DataFile = new TFile("../dat/spectras.root","READ");
 
-  Double_t quench = 0.72;
-  if(type==1) quench = 0.8;
+  Double_t quench = 0.71;
+  if(type==1) quench = 0.25;
   if(type==2) quench = 1.0;
 
   ToyMC *the_toy = new ToyMC(seed);
@@ -58,8 +58,12 @@ int main(int argc, char **argv)
   the_toy->SetNumExperiments(numExperiments);
   the_toy->LoadPDFs(DataFile);
   the_toy->SetQuenchingFactor(quench);
-  the_toy->SetLightYield(2000);//Artifically reduce light yield in order to speed up simulations
+  the_toy->SetLightYield(20000);//Artifically reduce light yield in order to speed up simulations
   the_toy->SetAfterPulsing(ap_mode);//Turn afterpulsing on/off (1 == on, 0 == off)
+  the_toy->SetPyreneWLSE(0.59);//TUM+Queens increase
+  //the_toy->SetPyreneWLSE(0.45);//TUM
+  //the_toy->SetPyreneWLSE(0.225);//TUM + reduction from Marcin
+
   //To change parameters, call it after LoadFunctions()
 
   string filename = "../output/"+foutname+Form("_ap_%i_type_%i.root",ap_mode,type);

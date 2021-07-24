@@ -11,7 +11,7 @@ Date: April 2021
 
 TH2D *CalculatefPyrenevsEnergy(TTree *t,double winLow, double winHigh);
 
-void plot_2d(string filename="output_0.root"){
+void plot_2d(string filename="high_PLQY_ap_1_type_0.root"){
     fStyle->DEAPStyle();
 
     string path = "../output/";
@@ -21,15 +21,15 @@ void plot_2d(string filename="output_0.root"){
     string pathNR = path.substr(0,path.find(".root")-1);
     pathNR+="1.root";
     TFile *fileinNR = new TFile(pathNR.c_str());
-    string pathER = path.substr(0,path.find(".root")-1);
-    pathER+="2.root";
-    TFile *fileinER = new TFile(pathER.c_str());
+    // string pathER = path.substr(0,path.find(".root")-1);
+    // pathER+="2.root";
+    // TFile *fileinER = new TFile(pathER.c_str());
 
 
     //Read in tree
     TTree *tree = (TTree*) fileinNA->Get("T");
     TTree *treeNR = (TTree*) fileinNR->Get("T");
-    TTree *treeER = (TTree*) fileinER->Get("T");
+    //TTree *treeER = (TTree*) fileinER->Get("T");
 
     Double_t windowLowNR = -20.0; //NR rejection
     Double_t windowHighNR = 40.0;
@@ -48,7 +48,7 @@ void plot_2d(string filename="output_0.root"){
 
     hFpENR->Draw();
     hFpENANR->Draw("same");
-    c1->Print("../plots/fpyrene_vs_pe.pdf");
+    //c1->Print("../plots/fpyrene_vs_pe.pdf");
 
 
     TCanvas *c2 = new TCanvas("c2","Quantiles",1000,600);
@@ -70,7 +70,7 @@ void plot_2d(string filename="output_0.root"){
     gQ->SetMarkerStyle(21);
     gQ->Draw("ALP");
 
-    c2->Print("../plots/quartiles.pdf");
+    //c2->Print("../plots/quartiles.pdf");
     cout << "Lowest Energy Quartile cut-off at PE = "<< yq[0]<<endl;
 
 
@@ -82,7 +82,7 @@ TH2D *CalculatefPyrenevsEnergy(TTree *t, double winLow, double winHigh){
 
   Double_t windowEnd = 10000.0;
   Double_t rescale =1.0; //40000/2000
-  TH2D *hFpyrene = new TH2D("",Form("PE vs Pyrene PSD [%3.2f,%3.2f ns];PE;fPyreneNR",winLow,winHigh),100,0,5000,50,0,1);
+  TH2D *hFpyrene = new TH2D("",Form("PE vs Pyrene PSD [%3.2f,%3.2f ns];PE;fPyreneNR",winLow,winHigh),100,0,50000,50,0,1);
 
   vector<Double_t> *times = 0;
   Int_t numHits;
@@ -97,7 +97,7 @@ TH2D *CalculatefPyrenevsEnergy(TTree *t, double winLow, double winHigh){
   t->SetBranchAddress("edep",&edep);
   t->SetBranchAddress("shadowFraction",&shadowFraction);
 
-  for(int iTrial = 0; iTrial< t->GetEntries();iTrial++){
+  for(int iTrial = 0; iTrial< 1000;iTrial++){
     t->GetEntry(iTrial);
     Double_t fPyrene = 0.0;
     Double_t integral = 0.0;
