@@ -60,9 +60,9 @@ int main(int argc, char **argv)
   the_toy->SetQuenchingFactor(quench);
   the_toy->SetLightYield(20000);//Artifically reduce light yield in order to speed up simulations
   the_toy->SetAfterPulsing(ap_mode);//Turn afterpulsing on/off (1 == on, 0 == off)
-  the_toy->SetPyreneWLSE(0.59);//TUM+Queens increase
-  //the_toy->SetPyreneWLSE(0.45);//TUM
-  //the_toy->SetPyreneWLSE(0.225);//TUM + reduction from Marcin
+  //the_toy->SetPyreneWLSE(0.59);//TUM+Queens increase
+  //the_toy->SetPyreneWLSE(0.46);//TUM
+  //the_toy->SetPyreneWLSE(0.35);//TUM + reduction from Marcin
 
   //To change parameters, call it after LoadFunctions()
 

@@ -155,7 +155,9 @@ void ToyMC::DoNeckAlphaTrial(Double_t &edep, Double_t &shadowFraction, Int_t &nu
 
     //WLS the photon
     if(pyrene_WLSE < gRandom->Rndm()) continue;
+//        cout << "t before = " <<t <<endl;
     t+=fPyrenePS->GetRandom(); //Add delay time
+//	cout << "t after = " <<t <<endl;
     wl=gPyreneSpec->Eval(gRandom->Rndm());//Sample a random wavelength
 
     //Tranismission probability to transmit down into inner detector

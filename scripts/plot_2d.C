@@ -17,7 +17,8 @@ void plot_2d(string filename="high_PLQY_ap_1_type_0.root"){
     string path = "../output/";
     path+=filename;
     cout << "Reading.. " << path <<endl;
-    TFile *fileinNA = new TFile(path.c_str());
+    //TFile *fileinNA = new TFile(path.c_str());
+    TFile *fileinNA = new TFile("../output/update_plqy_low_ap_1_type_0.root");
     string pathNR = path.substr(0,path.find(".root")-1);
     pathNR+="1.root";
     TFile *fileinNR = new TFile(pathNR.c_str());
