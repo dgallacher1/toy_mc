@@ -286,8 +286,12 @@ void ToyMC::LoadFunctions()
   SetLArParameters(paramlar);
 
   //Default Pyrene_PS Pulse-shape, 3 exponential (1 monomer, 2 excimer) at LAr temps
-  Double_t parampy[]= {0.68,293,0.11,87.0,0.23,239};
-  fPyrenePS = new TF1("fPyrenePS","[0]*exp(-x/[1])+[2]*exp(-x/[3])+[4]*exp(-x/[5])",0.001,windowEnd);
+  //Double_t parampy[]= {0.68,293,0.11,87.0,0.23,239};
+  //fPyrenePS = new TF1("fPyrenePS","[0]*exp(-x/[1])+[2]*exp(-x/[3])+[4]*exp(-x/[5])",0.001,windowEnd);
+  //Final model implementaiton
+  Double_t parampy[]= {0.52,279,0.18,105.0,0.31,249,0.22};
+  fPyrenePS = new TF1("fPyrenePS","[0]*exp(-x/[1]-2*[6]*sqrt(x/[1]))+[2]*exp(-x/[3])+[4]*exp(-x/[5])",0.001,windowEnd);
+
   SetPyreneParameters(parampy);
 
   //Random Energy deposition following a landau distribution with tail to low energies

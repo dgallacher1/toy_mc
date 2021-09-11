@@ -1,6 +1,6 @@
 ///////////////////////////////////
 ///Main program for ToyMC
-///Takes in command line arguments for seed,
+///Takes in command line arguments for seed,number of trials, number of experiments,file name and optional afterpulsing on/off
 ///
 ///
 ///////////////////////////////////
@@ -49,9 +49,10 @@ int main(int argc, char **argv)
 
   TFile *DataFile = new TFile("../dat/spectras.root","READ");
 
-  Double_t quench = 0.71;
-  if(type==1) quench = 0.25;
-  if(type==2) quench = 1.0;
+  //Set quenching factors
+  Double_t quench = 0.71;//alpha
+  if(type==1) quench = 0.25;//NR
+  if(type==2) quench = 1.0;//ER
 
   ToyMC *the_toy = new ToyMC(seed);
   the_toy->SetNumTrials(numTrials);
@@ -61,8 +62,8 @@ int main(int argc, char **argv)
   the_toy->SetLightYield(20000);//Artifically reduce light yield in order to speed up simulations
   the_toy->SetAfterPulsing(ap_mode);//Turn afterpulsing on/off (1 == on, 0 == off)
   //the_toy->SetPyreneWLSE(0.59);//TUM+Queens increase
-  //the_toy->SetPyreneWLSE(0.46);//TUM
-  //the_toy->SetPyreneWLSE(0.35);//TUM + reduction from Marcin
+  the_toy->SetPyreneWLSE(0.46);//TUM
+  //the_toy->SetPyreneWLSE(0.36);//TUM + reduction from Marcin
 
   //To change parameters, call it after LoadFunctions()
 
@@ -71,7 +72,7 @@ int main(int argc, char **argv)
 
   //Run the toy MC
   TTree *result_tree = the_toy->RunToy(type);
-
+  cout << "Completed toy MC, writing files.."<<endl;
   //Save to file
   //fileout->cd();
   result_tree->Write("T",TObject::kOverwrite);
